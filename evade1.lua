@@ -1,4 +1,3 @@
-
 local RS      = game:GetService("ReplicatedStorage")
 local UIS     = game:GetService("UserInputService")
 local TS      = game:GetService("TweenService")
@@ -26,7 +25,6 @@ local function applyFOV(val)
     end)
 end
 
-
 local BG     = Color3.fromRGB( 9,  9, 13)
 local PANEL  = Color3.fromRGB(18, 18, 26)
 local PANEL2 = Color3.fromRGB(26, 26, 36)
@@ -38,7 +36,6 @@ local TXT2   = Color3.fromRGB(128, 128, 150)
 local TXT3   = Color3.fromRGB(64,  64,  86)
 local OK_C   = Color3.fromRGB(140, 210, 140)
 local ERR_C  = Color3.fromRGB(210, 100, 100)
-
 
 local function nav(root, path)
     local c = root
@@ -83,9 +80,10 @@ end
 
 local EMOTES = {
     { n="Rockin Stride", src="Items.Emotes.RockinStride",
-      tgts={{ n="Kickback",      p="Items.Emotes.Kickback" },
-            { n="CasualSurfing", p="Items.Emotes.CasualSurfing" },
-            { n="FrostDrake",    p="Items.Emotes.FrostDrake" }} },
+      tgts={{ n="Kickback",         p="Items.Emotes.Kickback" },
+            { n="CasualSurfing",    p="Items.Emotes.CasualSurfing" },
+            { n="FrostDrake",       p="Items.Emotes.FrostDrake" },
+            { n="DynastyDrumming",  p="Items.Emotes.DynastyDrumming" }} },
     { n="Zombie Stride", src="Items.Emotes.ZombieStride",
       tgts={{ n="ToyTrainRide", p="Items.Emotes.ToyTrainRide" },
             { n="SolarSlayer",  p="Items.Emotes.SolarSlayer" },
@@ -225,9 +223,7 @@ local CONT_H   = 270
 local STATUS_H = 20
 local MAIN_H   = CONT_Y + CONT_H + 8 + STATUS_H + 8  -- 395  (full main view)
 
-
 local SET_H    = HDR_H + 1 + 8 + 70 + 10 + 110 + 10  -- 257
-
 
 local sg = Instance.new("ScreenGui")
 sg.Name="rgCosmic"; sg.ResetOnSpawn=false
@@ -276,7 +272,6 @@ hdr.Size=UDim2.new(1,0,0,HDR_H); hdr.BackgroundTransparency=1; hdr.ZIndex=2; hdr
 lbl("EVADE  Changer",14,TXT,UDim2.new(1,-66,0,20),UDim2.new(0,14,0,6),Enum.Font.GothamBold,hdr)
 lbl("by @rgplugg",  10,TXT,UDim2.new(1,-66,0,16),UDim2.new(0,14,0,28),nil,hdr)
 
-
 local closeBtn=Instance.new("TextButton")
 closeBtn.Size=UDim2.new(0,24,0,24); closeBtn.Position=UDim2.new(1,-31,0,12)
 closeBtn.Text="x"; closeBtn.Font=Enum.Font.GothamBold; closeBtn.TextSize=11
@@ -287,7 +282,6 @@ closeBtn.MouseButton1Click:Connect(function()
     snapRoot:Destroy(); sg:Destroy()
 end)
 
-
 local gearBtn=Instance.new("TextButton")
 gearBtn.Size=UDim2.new(0,24,0,24); gearBtn.Position=UDim2.new(1,-59,0,12)
 gearBtn.Text="⚙"; gearBtn.Font=Enum.Font.GothamBold; gearBtn.TextSize=13
@@ -296,7 +290,6 @@ gearBtn.AutoButtonColor=false; gearBtn.ZIndex=3; gearBtn.Parent=hdr; corner(gear
 gearBtn.MouseEnter:Connect(function() TS:Create(gearBtn,TweenInfo.new(0.1),{TextColor3=TXT,BackgroundColor3=PANEL3}):Play() end)
 gearBtn.MouseLeave:Connect(function() TS:Create(gearBtn,TweenInfo.new(0.1),{TextColor3=TXT2,BackgroundColor3=PANEL2}):Play() end)
 
-
 local function sep(y,par)
     par = par or mf
     local f=Instance.new("Frame"); f.Size=UDim2.new(1,-20,0,1); f.Position=UDim2.new(0,10,0,y)
@@ -304,14 +297,12 @@ local function sep(y,par)
 end
 sep(HDR_H)
 
-
 local mainPage=Instance.new("Frame")
 mainPage.Name="MainPage"
 mainPage.Size=UDim2.new(1,0,1,-HDR_H-1)
 mainPage.Position=UDim2.new(0,0,0,HDR_H+1)
 mainPage.BackgroundTransparency=1; mainPage.BorderSizePixel=0
 mainPage.ZIndex=2; mainPage.Visible=true; mainPage.Parent=mf
-
 
 local tabLocalY = 6
 local tabRow=Instance.new("Frame")
@@ -332,7 +323,6 @@ tabE.TextColor3=TXT; tabE.BackgroundColor3=PANEL2
 
 sep(tabLocalY+TAB_H+4, mainPage)
 
-
 local statusLocalY = (CONT_Y - HDR_H - 1) + CONT_H + 8
 local statusLbl=Instance.new("TextLabel")
 statusLbl.Text=""; statusLbl.Font=Enum.Font.Gotham; statusLbl.TextSize=10
@@ -346,7 +336,6 @@ local function flash(msg,ok)
 end
 
 local CONT_LOCAL_Y = CONT_Y - HDR_H - 1  -- content y inside mainPage
-
 
 local function makeDropdown(parent,x,y,w,label,options,placeholder,onSelect)
     local TRIG_H=26; local ITEM_H=25; local PAD_X=10
@@ -399,7 +388,6 @@ local function makeDropdown(parent,x,y,w,label,options,placeholder,onSelect)
     hit.MouseButton1Click:Connect(function() isOpen=not isOpen; listF.Visible=isOpen; chev.Text=isOpen and "^" or "v" end)
     return wrapper, selLbl
 end
-
 
 local emCont=Instance.new("Frame")
 emCont.Size=UDim2.new(1,0,0,CONT_H); emCont.Position=UDim2.new(0,0,0,CONT_LOCAL_Y)
@@ -491,7 +479,6 @@ end)
 emApplyBtn.MouseEnter:Connect(function() TS:Create(emApplyBtn,TweenInfo.new(0.1),{BackgroundColor3=SEL}):Play() end)
 emApplyBtn.MouseLeave:Connect(function() TS:Create(emApplyBtn,TweenInfo.new(0.1),{BackgroundColor3=PANEL3}):Play() end)
 
-
 local efCont=Instance.new("Frame")
 efCont.Size=UDim2.new(1,0,0,CONT_H); efCont.Position=UDim2.new(0,0,0,CONT_LOCAL_Y)
 efCont.BackgroundTransparency=1; efCont.BorderSizePixel=0; efCont.ClipsDescendants=false
@@ -560,7 +547,6 @@ efResetBtn.MouseButton1Click:Connect(function()
     task.delay(2,function() if efResetBtn and efResetBtn.Parent then efResetBtn.Text="RESET EFFECT"; efResetBtn.TextColor3=TXT2 end end)
 end)
 
-
 local function switchTab(toEffects)
     emCont.Visible=not toEffects; efCont.Visible=toEffects
     tabE.TextColor3=toEffects and TXT2 or TXT;  tabE.BackgroundColor3=toEffects and PANEL  or PANEL2
@@ -569,14 +555,12 @@ end
 tabE.MouseButton1Click:Connect(function() switchTab(false) end)
 tabF.MouseButton1Click:Connect(function() switchTab(true) end)
 
-
 local settingsPage=Instance.new("Frame")
 settingsPage.Name="SettingsPage"
 settingsPage.Size=UDim2.new(1,0,1,-HDR_H-1)
 settingsPage.Position=UDim2.new(0,0,0,HDR_H+1)
 settingsPage.BackgroundTransparency=1; settingsPage.BorderSizePixel=0
 settingsPage.ZIndex=2; settingsPage.Visible=false; settingsPage.Parent=mf
-
 
 local kyCard=Instance.new("Frame")
 kyCard.Size=UDim2.new(1,-20,0,70); kyCard.Position=UDim2.new(0,10,0,8)
@@ -622,14 +606,12 @@ fovCard.Parent=settingsPage; corner(fovCard); bdr(fovCard)
 lbl("FIELD OF VIEW",9,TXT3,UDim2.new(1,-16,0,14),UDim2.new(0,10,0,8),Enum.Font.GothamBold,fovCard)
 lbl("Введите значение от 1 до 270:",8,TXT3,UDim2.new(1,-16,0,14),UDim2.new(0,10,0,22),nil,fovCard).ZIndex=3
 
-
 local fovBox=Instance.new("TextBox"); fovBox.Size=UDim2.new(0,130,0,26); fovBox.Position=UDim2.new(0.5,-65,0,40)
 fovBox.Text=tostring(currentFOV); fovBox.PlaceholderText="90"
 fovBox.Font=Enum.Font.GothamBold; fovBox.TextSize=14; fovBox.TextXAlignment=Enum.TextXAlignment.Center
 fovBox.TextColor3=TXT; fovBox.BackgroundColor3=PANEL2; fovBox.BorderSizePixel=0
 fovBox.ClearTextOnFocus=false; fovBox.ZIndex=3; fovBox.Parent=fovCard
 corner(fovBox,5); bdr(fovBox,BORDER)
-
 
 local fovApplyBtn=Instance.new("TextButton"); fovApplyBtn.Size=UDim2.new(0,90,0,22); fovApplyBtn.Position=UDim2.new(0.5,-45,0,74)
 fovApplyBtn.Text="APPLY"; fovApplyBtn.Font=Enum.Font.GothamBold; fovApplyBtn.TextSize=10
@@ -658,7 +640,6 @@ end)
 
 fovBox.FocusLost:Connect(function(enter) if enter then fovApplyBtn.MouseButton1Click:Fire() end end)
 
-
 local onSettingsScreen = false
 
 gearBtn.MouseButton1Click:Connect(function()
@@ -674,7 +655,6 @@ gearBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-
 local drag,dStart,dPos=false,nil,nil
 hdr.InputBegan:Connect(function(i)
     if i.UserInputType==Enum.UserInputType.MouseButton1 then drag=true; dStart=i.Position; dPos=mf.Position end
@@ -689,7 +669,6 @@ UIS.InputEnded:Connect(function(i)
     if i.UserInputType==Enum.UserInputType.MouseButton1 then drag=false end
 end)
 
-
 local menuVis=true
 UIS.InputBegan:Connect(function(inp,gpe)
     if gpe then return end
@@ -699,9 +678,8 @@ UIS.InputBegan:Connect(function(inp,gpe)
     end
 end)
 
-
 TS:Create(mf, TweenInfo.new(0.35,Enum.EasingStyle.Back,Enum.EasingDirection.Out), {
     Position=UDim2.new(0,20,0.5,-MAIN_H/2)
 }):Play()
 
-print("[rg] EVADE Changer v5 loaded | "..toggleKey.Name.." to toggle | FOV: "..currentFOV)
+print("[rg] EVADE Changer loaded | "..toggleKey.Name.." to toggle | FOV: "..currentFOV)
