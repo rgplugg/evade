@@ -231,18 +231,15 @@ local EFFS = {
     { n="2AnniversaryHat",           p="Items.Cosmetics.2AnniversaryHat" },
 }
 
-
 local snapRoot = Instance.new("Folder"); snapRoot.Name="__rg_snap5"; snapRoot.Parent=RS
 local eSnaps={}; local eRefs={}
 local lSnaps={}
-
 local bSnaps={}
 
 local seen={}
 for _,g in ipairs(EMOTES) do
     for _,t in ipairs(g.tgts) do
         if not seen[t.p] then seen[t.p]=true
-          
             local inst = g.legacy and nav(RS,t.p) or resolveAnyCached(t.p)
             if inst then
                 if g.legacy then
@@ -265,29 +262,22 @@ end
 for _,b in ipairs(BASES) do
     local inst = nav(RS, b.p)
     if inst then
-        local f=Instance.new("Folder"); f.Name="b-"..b.n; f.Parent=snapRoot
+        local f = Instance.new("Folder"); f.Name="b-"..b.n; f.Parent=snapRoot
         for _,c in pairs(inst:GetChildren()) do c:Clone().Parent=f end
-        bSnaps[b.p]=f
+        bSnaps[b.p] = f
     end
 end
 
 local function resetEmotes()
-    local ok=true
-    for path, snap in pairs(eSnaps) do
-        local i = eRefs[path] or resolveAnyCached(path)
-        if i then
-            for _,c in pairs(i:GetChildren()) do c:Destroy() end
-            for _,c in pairs(snap:GetChildren()) do c:Clone().Parent=i end
-        else ok=false end
-    end
+    local ok = true
     for path, snap in pairs(lSnaps) do
-        local i = nav(RS,path)
+        local i = nav(RS, path)
         if i then
             for _,key in ipairs({"Visual","Animation"}) do
-                local old=i:FindFirstChild(key)
+                local old = i:FindFirstChild(key)
                 if old then pcall(function() old:Destroy() end) end
                 task.wait(0.02)
-                local s=snap:FindFirstChild(key)
+                local s = snap:FindFirstChild(key)
                 if s then pcall(function() s:Clone().Parent=i end) end
                 task.wait(0.02)
             end
@@ -310,10 +300,10 @@ end
 local W        = 280
 local HDR_H    = 48
 local TAB_H    = 26
-local CONT_Y   = HDR_H + 7 + TAB_H + 8   -- 89
+local CONT_Y   = HDR_H + 7 + TAB_H + 8
 local CONT_H   = 270
 local STATUS_H = 20
-local MAIN_H   = CONT_Y + CONT_H + 8 + STATUS_H + 8  -- 395
+local MAIN_H   = CONT_Y + CONT_H + 8 + STATUS_H + 8
 
 local sg = Instance.new("ScreenGui")
 sg.Name="rgCosmic"; sg.ResetOnSpawn=false
@@ -369,7 +359,8 @@ closeBtn.TextColor3=TXT2; closeBtn.BackgroundColor3=PANEL2; closeBtn.BorderSizeP
 closeBtn.AutoButtonColor=false; closeBtn.ZIndex=3; closeBtn.Parent=hdr; corner(closeBtn,5)
 closeBtn.MouseButton1Click:Connect(function()
     if _G.FOVChangerConnection then _G.FOVChangerConnection:Disconnect() end
-    snapRoot:Destroy(); sg:Destroy()
+    if snapRoot and snapRoot.Parent then snapRoot:Destroy() end
+    sg:Destroy()
 end)
 
 local gearBtn=Instance.new("TextButton")
@@ -508,7 +499,6 @@ emTgtLabel.TextXAlignment=Enum.TextXAlignment.Left; emTgtLabel.ZIndex=3; emTgtLa
 local emTgtRow=Instance.new("Frame"); emTgtRow.Size=UDim2.new(1,-16,0,28); emTgtRow.Position=UDim2.new(0,8,0,54)
 emTgtRow.BackgroundTransparency=1; emTgtRow.BorderSizePixel=0; emTgtRow.ZIndex=3; emTgtRow.Parent=emCard
 
-
 local emResetBtn=Instance.new("TextButton"); emResetBtn.Size=UDim2.new(1,-20,0,26); emResetBtn.Position=UDim2.new(0,10,0,188)
 emResetBtn.Text="RESET ALL EMOTES"; emResetBtn.Font=Enum.Font.GothamBold; emResetBtn.TextSize=10
 emResetBtn.TextColor3=TXT2; emResetBtn.BackgroundColor3=PANEL2; emResetBtn.BorderSizePixel=0
@@ -517,26 +507,17 @@ emResetBtn.MouseEnter:Connect(function() TS:Create(emResetBtn,TweenInfo.new(0.1)
 emResetBtn.MouseLeave:Connect(function() TS:Create(emResetBtn,TweenInfo.new(0.1),{BackgroundColor3=PANEL2}):Play() end)
 emResetBtn.MouseButton1Click:Connect(function()
     emResetBtn.Text="Restoring..."
-    local ok=resetEmotes()
-    emResetBtn.Text=ok and "RESTORED" or "FAILED"; emResetBtn.TextColor3=ok and OK_C or ERR_C
-    flash(ok and "All emotes restored!" or "Some restores failed.",ok)
-    task.delay(2,function() if emResetBtn and emResetBtn.Parent then emResetBtn.Text="RESET ALL EMOTES"; emResetBtn.TextColor3=TXT2 end end)
+    task.spawn(function()
+        local ok = resetEmotes()
+        emResetBtn.Text=ok and "RESTORED" or "FAILED"; emResetBtn.TextColor3=ok and OK_C or ERR_C
+        flash(ok and "All emotes restored!" or "Some restores failed.", ok)
+        task.delay(2, function()
+            if emResetBtn and emResetBtn.Parent then
+                emResetBtn.Text="RESET ALL EMOTES"; emResetBtn.TextColor3=TXT2
+            end
+        end)
+    end)
 end)
-
-
-local overhaulNoticeLbl=Instance.new("TextLabel")
-overhaulNoticeLbl.Text="I don't know how to return visual emotions\nand effects to Overhaul, but Legacy still works"
-overhaulNoticeLbl.Font=Enum.Font.Gotham
-overhaulNoticeLbl.TextSize=11
-overhaulNoticeLbl.TextColor3=WARN_C
-overhaulNoticeLbl.BackgroundTransparency=1
-overhaulNoticeLbl.Size=UDim2.new(1,-20,0,36)
-overhaulNoticeLbl.Position=UDim2.new(0,10,0,220)
-overhaulNoticeLbl.TextXAlignment=Enum.TextXAlignment.Center
-overhaulNoticeLbl.TextWrapped=true
-overhaulNoticeLbl.ZIndex=3
-overhaulNoticeLbl.Visible=false
-overhaulNoticeLbl.Parent=emCont
 
 local curGroup=nil; local curTgtIdx=1; local tgtBtns={}
 local function rebuildTargetRow(group)
@@ -567,8 +548,6 @@ makeDropdown(emCont,10,18,emDropW,"SELECT EMOTE",EMOTES,"-- choose emote --",
         emCardTitle.Text=opt.n
         rebuildTargetRow(opt)
         emCard.Visible=true
-  
-        overhaulNoticeLbl.Visible = not opt.legacy
     end)
 
 emApplyBtn.MouseButton1Click:Connect(function()
@@ -642,7 +621,6 @@ for i,eff in ipairs(EFFS) do
             TS:Create(effApply,TweenInfo.new(0.08),{BackgroundColor3=PANEL2}):Play() end end)
     effApply.MouseButton1Click:Connect(function()
         if not curBase then flash("Select a base cosmetic first!",false); return end
-     
         effApply.Text="..."; resetBase(curBase.p); local ok=swapContentNav(curBase.p,eff.p)
         if activeEffBtn and activeEffBtn~=row then
             activeEffBtn.BackgroundTransparency=1
