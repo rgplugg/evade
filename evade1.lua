@@ -36,6 +36,7 @@ local TXT2   = Color3.fromRGB(128, 128, 150)
 local TXT3   = Color3.fromRGB(64,  64,  86)
 local OK_C   = Color3.fromRGB(140, 210, 140)
 local ERR_C  = Color3.fromRGB(210, 100, 100)
+local WARN_C = Color3.fromRGB(210, 180, 80)
 
 local function nav(root, path)
     local c = root
@@ -43,8 +44,57 @@ local function nav(root, path)
     return c
 end
 
+local function findDeep(folder, name, depth)
+    depth = depth or 0
+    if depth > 6 then return nil end
+    local direct = folder:FindFirstChild(name)
+    if direct then return direct end
+    for _, child in ipairs(folder:GetChildren()) do
+        if child:IsA("Folder") then
+            local found = findDeep(child, name, depth + 1)
+            if found then return found end
+        end
+    end
+    return nil
+end
+
+local function findInItems(targetFolder, itemName)
+    local items = RS:FindFirstChild("Items")
+    if not items then return nil end
+    local function search(folder, depth)
+        if depth > 10 then return nil end
+        for _, child in ipairs(folder:GetChildren()) do
+            if child.Name == targetFolder then
+                local found = findDeep(child, itemName)
+                if found then return found end
+            elseif child:IsA("Folder") then
+                local found = search(child, depth + 1)
+                if found then return found end
+            end
+        end
+        return nil
+    end
+    return search(items, 0)
+end
+
+local function resolveAny(path)
+    local obj = nav(RS, path)
+    if obj then return obj end
+    local name = path:match("([^%.]+)$")
+    if not name then return nil end
+    return findInItems("Emotes", name) or findInItems("Cosmetics", name)
+end
+
+local resolvedCache = {}
+local function resolveAnyCached(path)
+    if resolvedCache[path] then return resolvedCache[path] end
+    local obj = resolveAny(path)
+    if obj then resolvedCache[path] = obj end
+    return obj
+end
+
 local function swapContent(tgt, src)
-    local t = nav(RS,tgt); local s = nav(RS,src)
+    local t = resolveAnyCached(tgt); local s = resolveAnyCached(src)
     if not t or not s then warn("[rg] miss:"..tgt.."/"..src); return false end
     for _,c in pairs(t:GetChildren()) do c:Destroy() end
     for _,c in pairs(s:GetChildren()) do c:Clone().Parent = t end
@@ -65,6 +115,14 @@ local function swapLegacy(tgtPath, srcPath)
             task.wait(0.05)
         end
     end
+    return true
+end
+
+local function swapContentNav(tgt, src)
+    local t = nav(RS, tgt); local s = nav(RS, src)
+    if not t or not s then warn("[rg] miss:"..tgt.."/"..src); return false end
+    for _,c in pairs(t:GetChildren()) do c:Destroy() end
+    for _,c in pairs(s:GetChildren()) do c:Clone().Parent = t end
     return true
 end
 
@@ -95,81 +153,109 @@ local EMOTES = {
       tgts={{ n="Stride",    p="Items.Emotes.Stride" },
             { n="BoldMarch", p="Items.Emotes.BoldMarch" },
             { n="Kickback",  p="Items.Emotes.Kickback" }} },
-    { n="RockinStride (LEGACY)", src="Items.Emotes.RockinStride", legacy=true,
+    { n="Rockin Stride (LEGACY)", src="Items.Emotes.RockinStride", legacy=true,
       tgts={{ n="SnowmobileCruise", p="Items.Emotes.SnowmobileCruise" },
             { n="Tank",            p="Items.Emotes.Tank" },
             { n="Rocket",          p="Items.Emotes.Rocket" }} },
-    { n="BroomOfDoom (LEGACY)", src="Items.Emotes.Broom", legacy=true,
+    { n="Broom Of Doom (LEGACY)", src="Items.Emotes.Broom", legacy=true,
       tgts={{ n="SnowmobileCruise", p="Items.Emotes.SnowmobileCruise" },
             { n="HarpRecital",     p="Items.Emotes.HarpRecital" },
             { n="AngelicWings",    p="Items.Emotes.AngelicWings" }} },
-    { n="WerewolfHowl (LEGACY)", src="Items.Emotes.WerewolfHowl", legacy=true,
+    { n="Werewol fHowl (LEGACY)", src="Items.Emotes.WerewolfHowl", legacy=true,
       tgts={{ n="SwagWalk",         p="Items.Emotes.SwagWalk" },
             { n="SnowmobileCruise", p="Items.Emotes.SnowmobileCruise" },
             { n="BoldMarch",        p="Items.Emotes.BoldMarch" }} },
 }
 
 local BASES = {
-    { n="BlueAbduction",  p="Items.Cosmetics.BlueAbduction" },
-    { n="GreenAbduction", p="Items.Cosmetics.GreenAbduction" },
-    { n="PureLove",       p="Items.Cosmetics.PureLove" },
-    { n="RedAbduction",   p="Items.Cosmetics.RedAbduction" },
+    { n="BlueAbduction",           p="Items.Cosmetics.BlueAbduction" },
+    { n="EncapsulatedBarbedWires", p="Items.Cosmetics.EncapsulatedBarbedWires" },
+    { n="GreenAbduction",          p="Items.Cosmetics.GreenAbduction" },
+    { n="OozingMoney",             p="Items.Cosmetics.OozingMoney" },
+    { n="PureLove",                p="Items.Cosmetics.PureLove" },
+    { n="RedAbduction",            p="Items.Cosmetics.RedAbduction" },
+    { n="Thermocline",             p="Items.Cosmetics.Thermocline" },
 }
 
 local EFFS = {
-    { n="Adoration",          p="Items.Cosmetics.Adoration" },
-    { n="AlphaTester",        p="Items.Cosmetics.AlphaTester" },
-    { n="AngelicRedemption",  p="Items.Cosmetics.AngelicRedemption" },
-    { n="AnimalAura",         p="Items.Cosmetics.AnimalAura" },
-    { n="AuroranStag",        p="Items.Cosmetics.AuroranStag" },
-    { n="BeeShield",          p="Items.Cosmetics.BeeShield" },
-    { n="BionicRejuvination", p="Items.Cosmetics.BionicRejuvination" },
-    { n="BloodMoon",          p="Items.Cosmetics.BloodMoon" },
-    { n="BluefirePortal",     p="Items.Cosmetics.BluefirePortal" },
-    { n="ChaoticRadiance",    p="Items.Cosmetics.ChaoticRadiance" },
-    { n="CirclingBeams",      p="Items.Cosmetics.CirclingBeams" },
-    { n="CursedEye",          p="Items.Cosmetics.CursedEye" },
-    { n="DarkTendrils",       p="Items.Cosmetics.DarkTendrils" },
-    { n="DoggoAura",          p="Items.Cosmetics.DoggoAura" },
-    { n="EclipseCrown",       p="Items.Cosmetics.EclipseCrown" },
-    { n="EclipseNova",        p="Items.Cosmetics.EclipseNova" },
-    { n="Euphoria",           p="Items.Cosmetics.Euphoria" },
-    { n="FrigidPerception",   p="Items.Cosmetics.FrigidPerception" },
-    { n="FrostFlame",         p="Items.Cosmetics.FrostFlame" },
-    { n="GildedStag",         p="Items.Cosmetics.GildedStag" },
-    { n="GlacialOutburst",    p="Items.Cosmetics.GlacialOutburst" },
-    { n="GlowingHaze",        p="Items.Cosmetics.GlowingHaze" },
-    { n="HallowedSpecters",   p="Items.Cosmetics.HallowedSpecters" },
-    { n="HellfirePortal",     p="Items.Cosmetics.HellfirePortal" },
-    { n="KoiPond",            p="Items.Cosmetics.KoiPond" },
-    { n="MidasTouch",         p="Items.Cosmetics.MidasTouch" },
-    { n="OminousDemise",      p="Items.Cosmetics.OminousDemise" },
-    { n="OozingMoney",        p="Items.Cosmetics.OozingMoney" },
-    { n="ShimmeringCoronet",  p="Items.Cosmetics.ShimmeringCoronet" },
-    { n="SpawnHalo",          p="Items.Cosmetics.SpawnHalo" },
-    { n="Technotic",          p="Items.Cosmetics.Technotic" },
-    { n="ToxicInferno",       p="Items.Cosmetics.ToxicInferno" },
-    { n="VerdantStag",        p="Items.Cosmetics.VerdantStag" },
-    { n="WinterChains",       p="Items.Cosmetics.WinterChains" },
+    { n="Adoration",                 p="Items.Cosmetics.Adoration" },
+    { n="AlphaTester",               p="Items.Cosmetics.AlphaTester" },
+    { n="AuroraBorealis",            p="Items.Cosmetics.AuroraBorealis" },
+    { n="AngelicRedemption",         p="Items.Cosmetics.AngelicRedemption" },
+    { n="AuroranStag",               p="Items.Cosmetics.AuroranStag" },
+    { n="AtomicHeart",               p="Items.Cosmetics.AtomicHeart" },
+    { n="BionicRejuvination",        p="Items.Cosmetics.BionicRejuvination" },
+    { n="BloodMoon",                 p="Items.Cosmetics.BloodMoon" },
+    { n="BluefirePortal",            p="Items.Cosmetics.BluefirePortal" },
+    { n="BlizzardyStorm",            p="Items.Cosmetics.BlizzardyStorm" },
+    { n="CursedEye",                 p="Items.Cosmetics.CursedEye" },
+    { n="CloverEssence",             p="Items.Cosmetics.CloverEssence" },
+    { n="CupidsArrow",               p="Items.Cosmetics.CupidsArrow" },
+    { n="DarkTendrils",              p="Items.Cosmetics.DarkTendrils" },
+    { n="DonationVictorian",         p="Items.Cosmetics.DonationVictorian" },
+    { n="EncapsulatedBarbedWires",   p="Items.Cosmetics.EncapsulatedBarbedWires" },
+    { n="EclipseLove",               p="Items.Cosmetics.EclipseLove" },
+    { n="Euphoria",                  p="Items.Cosmetics.Euphoria" },
+    { n="FrigidPerception",          p="Items.Cosmetics.FrigidPerception" },
+    { n="FrostFlame",                p="Items.Cosmetics.FrostFlame" },
+    { n="GlowingHaze",               p="Items.Cosmetics.GlowingHaze" },
+    { n="GildedStag",                p="Items.Cosmetics.GildedStag" },
+    { n="GlacialOutburst",           p="Items.Cosmetics.GlacialOutburst" },
+    { n="GlowingTree",               p="Items.Cosmetics.GlowingTree" },
+    { n="HallowedSpecters",          p="Items.Cosmetics.HallowedSpecters" },
+    { n="HauntedIridescence",        p="Items.Cosmetics.HauntedIridescence" },
+    { n="HellfirePortal",            p="Items.Cosmetics.HellfirePortal" },
+    { n="IllusionEyes",              p="Items.Cosmetics.IllusionEyes" },
+    { n="KhanOfWinter",              p="Items.Cosmetics.KhanOfWinter" },
+    { n="LuckyStrike",               p="Items.Cosmetics.LuckyStrike" },
+    { n="LevelVictorian",            p="Items.Cosmetics.LevelVictorian" },
+    { n="LeprechaunsRune",           p="Items.Cosmetics.LeprechaunsRune" },
+    { n="MintyExplosion",            p="Items.Cosmetics.MintyExplosion" },
+    { n="NuclearDoom",               p="Items.Cosmetics.NuclearDoom" },
+    { n="OminousDemise",             p="Items.Cosmetics.OminousDemise" },
+    { n="OozingMoney",               p="Items.Cosmetics.OozingMoney" },
+    { n="PureLove",                  p="Items.Cosmetics.PureLove" },
+    { n="SurvivalVictorian",         p="Items.Cosmetics.SurvivalVictorian" },
+    { n="ShimmeringCoronet",         p="Items.Cosmetics.ShimmeringCoronet" },
+    { n="SubzeroBurst",              p="Items.Cosmetics.SubzeroBurst" },
+    { n="StPixels",                  p="Items.Cosmetics.StPixels" },
+    { n="ShimmeringCoronet",         p="Items.Cosmetics.ShimmeringCoronet" },
+    { n="SuspendedLights",           p="Items.Cosmetics.SuspendedLights" },
+    { n="Thermocline",               p="Items.Cosmetics.Thermocline" },
+    { n="ToxicInferno",              p="Items.Cosmetics.ToxicInferno" },
+    { n="VerdantStag",               p="Items.Cosmetics.VerdantStag" },
+    { n="WinterChains",              p="Items.Cosmetics.WinterChains" },
+    { n="WintertideEssence",         p="Items.Cosmetics.WintertideEssence" },
+    { n="XmasBurst",                 p="Items.Cosmetics.XmasBurst" },
+    { n="2023Celebration",           p="Items.Cosmetics.2023Celebration" },
+    { n="2AnniversaryHat",           p="Items.Cosmetics.2AnniversaryHat" },
 }
 
+
 local snapRoot = Instance.new("Folder"); snapRoot.Name="__rg_snap5"; snapRoot.Parent=RS
-local eSnaps={}; local lSnaps={}; local bSnaps={}
+local eSnaps={}; local eRefs={}
+local lSnaps={}
+
+local bSnaps={}
 
 local seen={}
 for _,g in ipairs(EMOTES) do
     for _,t in ipairs(g.tgts) do
         if not seen[t.p] then seen[t.p]=true
-            local inst=nav(RS,t.p)
+          
+            local inst = g.legacy and nav(RS,t.p) or resolveAnyCached(t.p)
             if inst then
                 if g.legacy then
                     local f=Instance.new("Folder"); f.Name="l-"..t.p:gsub("%.","-"); f.Parent=snapRoot
                     for _,key in ipairs({"Visual","Animation"}) do
                         local c=inst:FindFirstChild(key); if c then c:Clone().Parent=f end
-                    end; lSnaps[t.p]=f
+                    end
+                    lSnaps[t.p]=f
                 else
                     local f=Instance.new("Folder"); f.Name=t.p:gsub("%.","-"); f.Parent=snapRoot
-                    for _,c in pairs(inst:GetChildren()) do c:Clone().Parent=f end; eSnaps[t.p]=f
+                    for _,c in pairs(inst:GetChildren()) do c:Clone().Parent=f end
+                    eSnaps[t.p]=f
+                    eRefs[t.p]=inst
                 end
             end
         end
@@ -177,29 +263,33 @@ for _,g in ipairs(EMOTES) do
 end
 
 for _,b in ipairs(BASES) do
-    local inst=nav(RS,b.p)
+    local inst = nav(RS, b.p)
     if inst then
         local f=Instance.new("Folder"); f.Name="b-"..b.n; f.Parent=snapRoot
-        for _,c in pairs(inst:GetChildren()) do c:Clone().Parent=f end; bSnaps[b.p]=f
+        for _,c in pairs(inst:GetChildren()) do c:Clone().Parent=f end
+        bSnaps[b.p]=f
     end
 end
 
 local function resetEmotes()
     local ok=true
-    for path,snap in pairs(eSnaps) do
-        local i=nav(RS,path)
-        if i then for _,c in pairs(i:GetChildren()) do c:Destroy() end
-               for _,c in pairs(snap:GetChildren()) do c:Clone().Parent=i end
+    for path, snap in pairs(eSnaps) do
+        local i = eRefs[path] or resolveAnyCached(path)
+        if i then
+            for _,c in pairs(i:GetChildren()) do c:Destroy() end
+            for _,c in pairs(snap:GetChildren()) do c:Clone().Parent=i end
         else ok=false end
     end
-    for path,snap in pairs(lSnaps) do
-        local i=nav(RS,path)
+    for path, snap in pairs(lSnaps) do
+        local i = nav(RS,path)
         if i then
             for _,key in ipairs({"Visual","Animation"}) do
                 local old=i:FindFirstChild(key)
-                if old then pcall(function() old:Destroy() end) end; task.wait(0.02)
+                if old then pcall(function() old:Destroy() end) end
+                task.wait(0.02)
                 local s=snap:FindFirstChild(key)
-                if s then pcall(function() s:Clone().Parent=i end) end; task.wait(0.02)
+                if s then pcall(function() s:Clone().Parent=i end) end
+                task.wait(0.02)
             end
         else ok=false end
     end
@@ -207,12 +297,14 @@ local function resetEmotes()
 end
 
 local function resetBase(p)
-    local inst=nav(RS,p); local snap=bSnaps[p]
+    local inst = nav(RS, p)
+    local snap = bSnaps[p]
     if inst and snap then
         for _,c in pairs(inst:GetChildren()) do c:Destroy() end
         for _,c in pairs(snap:GetChildren()) do c:Clone().Parent=inst end
         return true
-    end; return false
+    end
+    return false
 end
 
 local W        = 280
@@ -221,14 +313,12 @@ local TAB_H    = 26
 local CONT_Y   = HDR_H + 7 + TAB_H + 8   -- 89
 local CONT_H   = 270
 local STATUS_H = 20
-local MAIN_H   = CONT_Y + CONT_H + 8 + STATUS_H + 8  -- 395  (full main view)
-
-local SET_H    = HDR_H + 1 + 8 + 70 + 10 + 110 + 10  -- 257
+local MAIN_H   = CONT_Y + CONT_H + 8 + STATUS_H + 8  -- 395
 
 local sg = Instance.new("ScreenGui")
 sg.Name="rgCosmic"; sg.ResetOnSpawn=false
 sg.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
-sg.DisplayOrder=999   -- above Tab / ESC menus
+sg.DisplayOrder=999
 sg.Parent=pGui
 
 local mf = Instance.new("Frame")
@@ -335,7 +425,7 @@ local function flash(msg,ok)
     task.delay(3,function() if statusLbl and statusLbl.Parent then statusLbl.Text="" end end)
 end
 
-local CONT_LOCAL_Y = CONT_Y - HDR_H - 1  -- content y inside mainPage
+local CONT_LOCAL_Y = CONT_Y - HDR_H - 1
 
 local function makeDropdown(parent,x,y,w,label,options,placeholder,onSelect)
     local TRIG_H=26; local ITEM_H=25; local PAD_X=10
@@ -418,6 +508,7 @@ emTgtLabel.TextXAlignment=Enum.TextXAlignment.Left; emTgtLabel.ZIndex=3; emTgtLa
 local emTgtRow=Instance.new("Frame"); emTgtRow.Size=UDim2.new(1,-16,0,28); emTgtRow.Position=UDim2.new(0,8,0,54)
 emTgtRow.BackgroundTransparency=1; emTgtRow.BorderSizePixel=0; emTgtRow.ZIndex=3; emTgtRow.Parent=emCard
 
+
 local emResetBtn=Instance.new("TextButton"); emResetBtn.Size=UDim2.new(1,-20,0,26); emResetBtn.Position=UDim2.new(0,10,0,188)
 emResetBtn.Text="RESET ALL EMOTES"; emResetBtn.Font=Enum.Font.GothamBold; emResetBtn.TextSize=10
 emResetBtn.TextColor3=TXT2; emResetBtn.BackgroundColor3=PANEL2; emResetBtn.BorderSizePixel=0
@@ -431,6 +522,21 @@ emResetBtn.MouseButton1Click:Connect(function()
     flash(ok and "All emotes restored!" or "Some restores failed.",ok)
     task.delay(2,function() if emResetBtn and emResetBtn.Parent then emResetBtn.Text="RESET ALL EMOTES"; emResetBtn.TextColor3=TXT2 end end)
 end)
+
+
+local overhaulNoticeLbl=Instance.new("TextLabel")
+overhaulNoticeLbl.Text="I don't know how to return visual emotions\nand effects to Overhaul, but Legacy still works"
+overhaulNoticeLbl.Font=Enum.Font.Gotham
+overhaulNoticeLbl.TextSize=11
+overhaulNoticeLbl.TextColor3=WARN_C
+overhaulNoticeLbl.BackgroundTransparency=1
+overhaulNoticeLbl.Size=UDim2.new(1,-20,0,36)
+overhaulNoticeLbl.Position=UDim2.new(0,10,0,220)
+overhaulNoticeLbl.TextXAlignment=Enum.TextXAlignment.Center
+overhaulNoticeLbl.TextWrapped=true
+overhaulNoticeLbl.ZIndex=3
+overhaulNoticeLbl.Visible=false
+overhaulNoticeLbl.Parent=emCont
 
 local curGroup=nil; local curTgtIdx=1; local tgtBtns={}
 local function rebuildTargetRow(group)
@@ -456,7 +562,14 @@ local function rebuildTargetRow(group)
 end
 
 makeDropdown(emCont,10,18,emDropW,"SELECT EMOTE",EMOTES,"-- choose emote --",
-    function(opt) curGroup=opt; emCardTitle.Text=opt.n; rebuildTargetRow(opt); emCard.Visible=true end)
+    function(opt)
+        curGroup=opt
+        emCardTitle.Text=opt.n
+        rebuildTargetRow(opt)
+        emCard.Visible=true
+  
+        overhaulNoticeLbl.Visible = not opt.legacy
+    end)
 
 emApplyBtn.MouseButton1Click:Connect(function()
     if not curGroup then flash("Select an emote first!",false); return end
@@ -493,11 +606,24 @@ effListLbl.ZIndex=3
 
 local EFF_ITEM_H=26; local EFF_LIST_H=150
 local scrollF=Instance.new("ScrollingFrame")
+
 scrollF.Size=UDim2.new(1,-20,0,EFF_LIST_H); scrollF.Position=UDim2.new(0,10,0,94)
 scrollF.CanvasSize=UDim2.new(0,0,0,#EFFS*EFF_ITEM_H+4)
 scrollF.ScrollBarThickness=4; scrollF.ScrollBarImageColor3=BORDER
 scrollF.BackgroundColor3=PANEL; scrollF.BorderSizePixel=0; scrollF.ZIndex=2
 scrollF.Parent=efCont; corner(scrollF); bdr(scrollF)
+
+local notWorkLbl=Instance.new("TextLabel")
+notWorkLbl.Text="not work for overhaul"
+notWorkLbl.Font=Enum.Font.GothamBold
+notWorkLbl.TextSize=10
+notWorkLbl.TextColor3=Color3.fromRGB(180, 100, 100)
+notWorkLbl.BackgroundTransparency=1
+notWorkLbl.Size=UDim2.new(1,-20,0,16)
+notWorkLbl.Position=UDim2.new(0,10,0,248)
+notWorkLbl.TextXAlignment=Enum.TextXAlignment.Center
+notWorkLbl.ZIndex=3
+notWorkLbl.Parent=efCont
 
 local activeEffBtn=nil
 for i,eff in ipairs(EFFS) do
@@ -516,7 +642,8 @@ for i,eff in ipairs(EFFS) do
             TS:Create(effApply,TweenInfo.new(0.08),{BackgroundColor3=PANEL2}):Play() end end)
     effApply.MouseButton1Click:Connect(function()
         if not curBase then flash("Select a base cosmetic first!",false); return end
-        effApply.Text="..."; resetBase(curBase.p); local ok=swapContent(curBase.p,eff.p)
+     
+        effApply.Text="..."; resetBase(curBase.p); local ok=swapContentNav(curBase.p,eff.p)
         if activeEffBtn and activeEffBtn~=row then
             activeEffBtn.BackgroundTransparency=1
             local pa=activeEffBtn:FindFirstChildOfClass("TextButton")
@@ -528,7 +655,7 @@ for i,eff in ipairs(EFFS) do
     end)
 end
 
-local efResetBtn=Instance.new("TextButton"); efResetBtn.Size=UDim2.new(1,-20,0,26); efResetBtn.Position=UDim2.new(0,10,0,252)
+local efResetBtn=Instance.new("TextButton"); efResetBtn.Size=UDim2.new(1,-20,0,26); efResetBtn.Position=UDim2.new(0,10,0,268)
 efResetBtn.Text="RESET EFFECT"; efResetBtn.Font=Enum.Font.GothamBold; efResetBtn.TextSize=10
 efResetBtn.TextColor3=TXT2; efResetBtn.BackgroundColor3=PANEL2; efResetBtn.BorderSizePixel=0
 efResetBtn.AutoButtonColor=false; efResetBtn.ZIndex=2; efResetBtn.Parent=efCont; corner(efResetBtn); bdr(efResetBtn)
