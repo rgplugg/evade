@@ -235,6 +235,7 @@ local snapRoot = Instance.new("Folder"); snapRoot.Name="__rg_snap5"; snapRoot.Pa
 local eSnaps={}; local eRefs={}
 local lSnaps={}
 local bSnaps={}
+local bRefs={}    -
 
 local seen={}
 for _,g in ipairs(EMOTES) do
@@ -260,11 +261,13 @@ for _,g in ipairs(EMOTES) do
 end
 
 for _,b in ipairs(BASES) do
-    local inst = nav(RS, b.p)
+ 
+    local inst = resolveAnyCached(b.p)
     if inst then
-        local f = Instance.new("Folder"); f.Name="b-"..b.n; f.Parent=snapRoot
+        local f = Instance.new("Folder"); f.Name=b.p:gsub("%.","-"); f.Parent=snapRoot
         for _,c in pairs(inst:GetChildren()) do c:Clone().Parent=f end
         bSnaps[b.p] = f
+        bRefs[b.p]  = inst  
     end
 end
 
@@ -287,7 +290,7 @@ local function resetEmotes()
 end
 
 local function resetBase(p)
-    local inst = nav(RS, p)
+    local inst = bRefs[p]
     local snap = bSnaps[p]
     if inst and snap then
         for _,c in pairs(inst:GetChildren()) do c:Destroy() end
@@ -295,6 +298,33 @@ local function resetBase(p)
         return true
     end
     return false
+end
+
+local function applyToCharacter(basePath, effPath)
+    local char = Players.LocalPlayer.Character
+    if not char then return end
+    local baseName = basePath:match("([^%.]+)$")
+    local effObj   = resolveAnyCached(effPath)
+    if not effObj then return end
+    
+    local charCos = char:FindFirstChild(baseName, true)
+    if charCos then
+        for _,c in pairs(charCos:GetChildren()) do pcall(function() c:Destroy() end) end
+        for _,c in pairs(effObj:GetChildren()) do pcall(function() c:Clone().Parent=charCos end) end
+    end
+end
+
+local function resetCharacter(basePath)
+    local char = Players.LocalPlayer.Character
+    if not char then return end
+    local baseName = basePath:match("([^%.]+)$")
+    local snap     = bSnaps[basePath]
+    if not snap then return end
+    local charCos = char:FindFirstChild(baseName, true)
+    if charCos then
+        for _,c in pairs(charCos:GetChildren()) do pcall(function() c:Destroy() end) end
+        for _,c in pairs(snap:GetChildren()) do pcall(function() c:Clone().Parent=charCos end) end
+    end
 end
 
 local W        = 280
@@ -592,17 +622,6 @@ scrollF.ScrollBarThickness=4; scrollF.ScrollBarImageColor3=BORDER
 scrollF.BackgroundColor3=PANEL; scrollF.BorderSizePixel=0; scrollF.ZIndex=2
 scrollF.Parent=efCont; corner(scrollF); bdr(scrollF)
 
-local notWorkLbl=Instance.new("TextLabel")
-notWorkLbl.Text="not work for overhaul"
-notWorkLbl.Font=Enum.Font.GothamBold
-notWorkLbl.TextSize=10
-notWorkLbl.TextColor3=Color3.fromRGB(180, 100, 100)
-notWorkLbl.BackgroundTransparency=1
-notWorkLbl.Size=UDim2.new(1,-20,0,16)
-notWorkLbl.Position=UDim2.new(0,10,0,248)
-notWorkLbl.TextXAlignment=Enum.TextXAlignment.Center
-notWorkLbl.ZIndex=3
-notWorkLbl.Parent=efCont
 
 local activeEffBtn=nil
 for i,eff in ipairs(EFFS) do
@@ -621,7 +640,9 @@ for i,eff in ipairs(EFFS) do
             TS:Create(effApply,TweenInfo.new(0.08),{BackgroundColor3=PANEL2}):Play() end end)
     effApply.MouseButton1Click:Connect(function()
         if not curBase then flash("Select a base cosmetic first!",false); return end
-        effApply.Text="..."; resetBase(curBase.p); local ok=swapContentNav(curBase.p,eff.p)
+        effApply.Text="..."
+        local ok=swapContent(curBase.p,eff.p)
+        if ok then applyToCharacter(curBase.p,eff.p) end
         if activeEffBtn and activeEffBtn~=row then
             activeEffBtn.BackgroundTransparency=1
             local pa=activeEffBtn:FindFirstChildOfClass("TextButton")
@@ -643,6 +664,7 @@ efResetBtn.MouseButton1Click:Connect(function()
     if not curBase then flash("Select a base first.",false); return end
     efResetBtn.Text="Restoring..."
     local ok=resetBase(curBase.p)
+    if ok then resetCharacter(curBase.p) end
     if ok and activeEffBtn then
         activeEffBtn.BackgroundTransparency=1
         local ap=activeEffBtn:FindFirstChildOfClass("TextButton")
